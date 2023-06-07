@@ -1,8 +1,10 @@
 //importação do model
 const Customer = require('../models/Customer')
+const qpm = require('query-params-mongo');
+
+var processQuery = qpm();
 
 const controller = {} //Objeto vazio
-
 controller.create = async(req,res) =>{
     try{
         //manda as informações que vierem em req body
@@ -20,8 +22,16 @@ controller.create = async(req,res) =>{
 
 controller.retrieveAll = async (req, res) =>{
     try{
+
+        let filter = {}
+
+        if(Object.keys(req.query).length >0){
         //retorna todos os documentos da coleção
-        const result = await Customer.find()
+        const query = processQuery(req.query, {}, false)
+        filter = query.filter
+        }
+
+        const result = await Customer.find(query.filter)
         //HTTP 200: OK (implicito)
         res.send(result)
     }

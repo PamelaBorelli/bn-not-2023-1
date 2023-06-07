@@ -1,4 +1,7 @@
 const Sale = require('../models/Sale')
+const qpm = require('query-params-mongo');
+
+var processQuery = qpm();
 
 const controller = {} // Objeto vazio
 
@@ -21,8 +24,17 @@ controller.create = async (req, res) => {
 
 controller.retriveAll = async (req, res) => {
     try {
+
+        let filter = {}
+
+        if(Object.keys(req.query).length >0){
+        //retorna todos os documentos da coleção
+        const query = processQuery(req.query, {}, false)
+        filter = query.filter
+        }
+
         //Retorna todos os documentos do console
-        const result = await Sale.find()
+        const result = await Sale.find(filter)
         .populate('customer')
         .populate('items.product')
         //HTTP 200: OK(implicito)
@@ -62,7 +74,44 @@ controller.retriveOne = async (req, res) => {
 controller.update = async (req, res) => {
     try {
 
-        const result = await Sale.findByIdAndUpdate(req.params.id, req.body)
+        const sale = await Sale.findById(req.params.id)
+        //itens foi passado em req.body
+
+        if(req.body.items){
+            // Percorre cada item de req.body, verificando se já existe 
+            //ou não  em sales.item
+            for (let item of req.body.items){
+                // se o item tem _id, é porque já existe -> É O CASO DE ATUALIZAÇÃO
+                if (item._id){
+
+                if(item['$ delete'] === true ){
+                    sale.item,id(item._id).deleteOne()
+                } 
+                else{
+                                    //procura cada propriedade no item de req.body e
+                for (prop in item){
+                    sale.items.id(item._id) [prop]= item[prop]
+                        }
+                    }
+                }
+                //item nçao existe -> É o caso de inserção
+                else{
+                    sale.items.push(item) //cria um novo item
+                }
+            }
+            //indica que o item foi modificado e deve ser regravado
+            sale.markModified('items')
+        }
+        // verifica as demais proprriedades do pai(sale)por alterações
+        for(let prop in req.body){
+            if(prop !== 'items'){ //items já foi processado acima
+                console.log({prop})
+                sale[prop] =req.body[prop]
+                sale.markModified(prop)
+            }
+        }
+
+        const result = await sale.save()
 
         if (result) {
             //Encontrou e atualizou => HTTP 204: No content

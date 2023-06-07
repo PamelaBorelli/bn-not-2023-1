@@ -1,43 +1,25 @@
-const mongoose = require('mongoose');
+//carregar as variaveis de ambiente a partir do arquivo .env
+require('dotenv').config()
 
-/**
- * Usa dese struturação para obter as variáveis de ambiente necessárias para realziar a conexão ao banco de dados
- * 
- */
 
-const {
-    MONGODB_USER,
-    MONGODB_PASS,
-    MONGODB_SERVER,
-    MONGODB_DATABASE
-} = process.env
+var express = require('express');
+var path = require('path');
+var cookieParser = require('cookie-parser');
+var logger = require('morgan');
 
-module.exports = function(){
-    console.log(`mongodb+srv://${MONGODB_USER}:${MONGODB_PASS}@${MONGODB_SERVER}/${MONGODB_DATABASE}?retryWrites=true&w=majority`)
-    // Conecta ao banco de dados
-    mongoose.connect(`mongodb+srv://${MONGODB_USER}:${MONGODB_PASS}@${MONGODB_SERVER}/${MONGODB_DATABASE}?retryWrites=true&w=majority`, {
-        useNewUrlParser: true,
-        useUnifiedTopology: true
-    })
+var indexRouter = require('./routes/index');
+var usersRouter = require('./routes/users');
 
-mongoose.connection.on('connected', () =>
-    console.log('=> MONGOOSE! conectado com sucesso ao servidor')
-)
-mongoose.connection.on('disconnected', ()=>
-console.log(('MONGOOSE! desconectado com sucesso ao servidor'))     
-)
-mongoose.connection.on('error', error =>
-console.log('*** MONGOOSE! ERRO erro ao se conectar com o servido' + error)
-)
+var app = express();
 
-//quando for detectado o comando de interrução Ctrl+c
+//Conectar ao banco de dados
+require('./config/database')()
 
-process.on('SIGINT', () =>{
-    mongoose.connection.on.close(()=>{
-        console.log('=> MONGOOSE! desconectando...');
-        //encerra a aplicação sem erros
-        process.exit(0)
-    })
-})
+app.use(logger('dev'));
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
+app.use(cookieParser());
+app.use(express.static(path.join(__dirname, 'public')));
 
-}
+app.use('/', indexRouter);
+app.use('/users', usersRouter);

@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "query-params-mongo": "^1.1.3"
+  }
+}
